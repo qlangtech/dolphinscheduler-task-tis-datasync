@@ -1,0 +1,78 @@
+package com.qlangtech.tis.plugin.dolphinscheduler.task.impl;
+
+import com.alibaba.fastjson.JSONObject;
+import com.google.common.collect.Maps;
+import com.qlangtech.tis.datax.DataXJobSubmit.InstanceType;
+import com.qlangtech.tis.datax.executor.ITaskExecutorContext;
+import com.qlangtech.tis.plugin.dolphinscheduler.task.TISDatasyncParameters;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.dolphinscheduler.plugin.task.api.TaskExecutionContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Map;
+import java.util.Objects;
+
+/**
+ * @author: 百岁（baisui@qlangtech.com）
+ **/
+public class DSTaskContext implements ITaskExecutorContext {
+    private final TISDatasyncParameters parameters;
+    private final TaskExecutionContext taskRequest;
+    private final Map<String, String> dagWorkflowParams = Maps.newHashMap();
+    private static final Logger logger = LoggerFactory.getLogger(DSTaskContext.class);
+
+    public DSTaskContext(TISDatasyncParameters parameters, TaskExecutionContext taskRequest) {
+        this.parameters = Objects.requireNonNull(parameters, "param parameters can not be null");
+        this.taskRequest = Objects.requireNonNull(taskRequest, "param taskRequest can not be null");
+    }
+
+    @Override
+    public InstanceType getJobTriggerType() {
+        return InstanceType.DS;
+    }
+
+    @Override
+    public void appendData2WfContext(String key, Object value) {
+        this.dagWorkflowParams.put(key
+                , String.valueOf(Objects.requireNonNull(value, "value can not be null")));
+    }
+
+    @Override
+    public JSONObject getInstanceParams() {
+        JSONObject instanceParams = new JSONObject(); //JSONObject.parseObject(StringUtils.defaultString(parameters.getSourceLocationArn(), "{}"));
+
+        parameters.getVarPoolMap().forEach((key, prop) -> {
+            instanceParams.put(key, prop.getValue());
+        });
+
+        return instanceParams;
+    }
+
+    @Override
+    public JSONObject getJobParams() {
+        JSONObject jobParams = JSONObject.parseObject(StringUtils.defaultString(parameters.getSourceLocationArn(), "{}"));
+        return jobParams;
+    }
+
+    @Override
+    public Long getWfInstanceId() {
+        return new Long(taskRequest.getProcessInstanceId());
+    }
+
+    @Override
+    public void infoLog(String var1, Object... var2) {
+        logger.info(var1, var2);
+    }
+
+    @Override
+    public void errorLog(String s, Exception e) {
+        logger.error(s, e);
+    }
+
+    @Override
+    public void finallyCommit() {
+        logger.info("send dagWorkflowParams:{}", dagWorkflowParams);
+        this.parameters.dealOutParam(dagWorkflowParams);
+    }
+}

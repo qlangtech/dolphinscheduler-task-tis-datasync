@@ -1,0 +1,7 @@
+{
+  "targetTables": {
+    "label": "目标表",
+    "enum": "com.qlangtech.tis.plugin.datax.SelectedTab.getColsCandidate():uncache_true",
+    "help": "请选择需要同步到DolphinScheduler的表"
+  }
+}
